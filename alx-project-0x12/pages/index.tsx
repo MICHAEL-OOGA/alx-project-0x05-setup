@@ -1,38 +1,25 @@
 import ImageCard from "@/components/common/ImageCard";
+import useFetchData from "@/hooks/useFetchData";
 import { ImageProps } from "@/interfaces";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 const Home: React.FC = () => {
   const [prompt, setPrompt] = useState<string>("");
   const [imageUrl, setImageUrl] = useState<string>("");
-  const [generatedImages, setGeneratedImages] = useState<ImageProps[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const { isLoading, responseData, generatedImages, fetchData } = useFetchData<
+    any,
+    { prompt: string }
+  >();
 
-  const handleGenerateImage = async () => {
-    setIsLoading(true);
-    const resp = await fetch("/api/generate-image", {
-      method: "POST",
-      body: JSON.stringify({
-        prompt,
-      }),
-      headers: {
-        "Content-type": "application/json",
-      },
-    });
-
-    if (!resp.ok) {
-      setIsLoading(false);
-      return;
-    }
-
-    const data = await resp.json();
-    setIsLoading(false);
-    setImageUrl(data?.message);
-    setGeneratedImages((prev) => [
-      ...prev,
-      { imageUrl: data?.message, prompt },
-    ]);
+  const handleGenerateImage = () => {
+    fetchData("/api/generate-image", { prompt });
   };
+
+  useEffect(() => {
+    if (!isLoading) {
+      setImageUrl(responseData?.message);
+    }
+  }, [isLoading]);
 
   return (
     <div className="flex flex-col items-center min-h-screen bg-gray-100 p-4">
@@ -50,7 +37,6 @@ const Home: React.FC = () => {
             placeholder="Enter your prompt here..."
             className="w-full p-3 border border-gray-300 rounded-lg mb-4"
           />
-
           <button
             onClick={handleGenerateImage}
             className="w-full p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-200"
@@ -59,7 +45,7 @@ const Home: React.FC = () => {
           </button>
         </div>
 
-        {imageUrl && (
+        {responseData?.message && (
           <ImageCard
             action={() => setImageUrl(imageUrl)}
             imageUrl={imageUrl}
